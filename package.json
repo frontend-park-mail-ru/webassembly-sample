@@ -1,0 +1,31 @@
+{
+    "name": "webassembly-sample",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "run": "node ./server/index.js",
+        "daemon": "nodemon ./server/index.js",
+        "asbuild:untouched": "asc assembly/index.ts -b dist/untouched.wasm -t dist/untouched.wat --sourceMap --validate --debug",
+        "asbuild:optimized": "asc assembly/index.ts -b dist/optimized.wasm -t dist/optimized.wat --sourceMap --validate --optimize",
+        "asbuild": "npm run asbuild:untouched && npm run asbuild:optimized && cp dist/optimized.wasm public/optimized.wasm"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/frontend-park-mail-ru/webassembly-sample.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/frontend-park-mail-ru/webassembly-sample/issues"
+    },
+    "homepage": "https://github.com/frontend-park-mail-ru/webassembly-sample#readme",
+    "dependencies": {
+        "express": "^4.16.4",
+        "ts-loader": "^5.3.3"
+    },
+    "devDependencies": {
+        "assemblyscript": "github:AssemblyScript/assemblyscript",
+        "nodemon": "^1.18.10"
+    }
+}

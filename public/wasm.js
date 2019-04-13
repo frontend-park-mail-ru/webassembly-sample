@@ -1,7 +1,9 @@
 
-var wasmModule;
-var memoryData = {};
-var memory = new WebAssembly.Memory({initial:8});
+let wasmModule;
+const memoryData = {};
+const memory = new WebAssembly.Memory({initial:8});
+const INIT_PULL_SIZE = 1024 * 1024;
+
 //забираем файл по нужному локейшену
 fetch("optimized.wasm")
     .then(function(response) {
@@ -24,9 +26,8 @@ fetch("optimized.wasm")
         //память работает через указатели. в представлении webassembly  в js -
         //указатель на память - индекс в массиве выделенной памяти. 
         wasmModule = module;
-        var size = 1024 * 1024;
-        memoryData.memoryPullPointer = wasmModule.instance.exports.allocate(size);
-        memoryData.pullSize = size;
+        memoryData.memoryPullPointer = wasmModule.instance.exports.allocate(INIT_PULL_SIZE);
+        memoryData.pullSize = INIT_PULL_SIZE;
         memoryData.memoryWasmPull =
             new Uint8Array (
                 wasmModule.instance.exports.memory.buffer,
@@ -41,7 +42,7 @@ function WASMAllocate(imageData, forceAlloc) {
     const pullSize = imageData.byteLength * 2;
 
     //проверяем, хватает ли нам предаллоцированной памяти. если нет - перевыделяем.
-    //и пользуемся до тех пор, пока опять не придут данные большие, чем объем выделенной памяти 
+    //и пользуемся до тех пор, пока опять не придут данные большИе, чем объем выделенной памяти 
 	if (pullSize > memoryData.pullSize || forceAlloc) {
 
 		wasmModule.instance.exports.freeBuffer(memoryData.memoryPullPointer);
@@ -58,16 +59,19 @@ function WASMAllocate(imageData, forceAlloc) {
 }
 
 function WASMGrayscale(imageData, forceAlloc) {
-
-    //try для дебага
 	try {
-    WASMAllocate(imageData, forceAlloc);
-    const wasmSourceImgPointer = memoryData.memoryPullPointer;
-    const wasmDistImgPointer = memoryData.memoryPullPointer + imageData.byteLength;
-    wasmModule.instance.exports.toGrayscale(wasmSourceImgPointer, imageData.byteLength, wasmDistImgPointer);
+        // аллоцируем память
+        WASMAllocate(imageData, forceAlloc); 
+        // указатель на начало выделнного фрагмента памяти
+        const wasmSourceImgPointer = memoryData.memoryPullPointer; 
+        // указатель на начало памяти, выделенной для записи нового изображения
+        const wasmDistImgPointer = memoryData.memoryPullPointer + imageData.byteLength; 
+        // вызываем экспортирпуемую из wasm модуля функцию
+        wasmModule.instance.exports.toGrayscale(wasmSourceImgPointer, imageData.byteLength, wasmDistImgPointer);
 
-    return memoryData.memoryWasmPull
-
+        // возвращаем указатель на buffer с записаным ответом
+        // return memoryData.memoryWasmPull.slice(imageData.byteLength, imageData.byteLength * 2)
+        return memoryData.memoryWasmPull;
 	} catch(err) {
 		debugger;
 	}
